@@ -6,7 +6,7 @@ import msal
 def get_token():
     """Get a token for Microsoft Graph API."""
     client_id = os.environ["GraphClient"]
-    authority = os.environ["GraphAuthority"]
+    authority = "https://login.microsoftonline.com/e7ff886e-c3fe-451f-a8e2-b4e879043d56"
     client_secret = os.environ["GraphSecret"]
 
     app = msal.ConfidentialClientApplication(
