@@ -3,6 +3,7 @@ import logging
 import os
 import msal
 import requests
+import json
 
 def get_token():
     """Get a token for Microsoft Graph API."""
@@ -55,12 +56,12 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         token = get_token()
 
         # Example usage of make_graph_api_request (modify as needed)
-        endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2"
+        endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLN6Y2GOVW7725BZO354PWSELRRZ"
         graph_response = make_graph_api_request(token, endpoint)
 
         # Return the Graph API response to the user
         return func.HttpResponse(
-            body=str(graph_response),
+            body=json.dumps(graph_response),
             status_code=200,
             headers={"Content-Type": "application/json"}
         )
