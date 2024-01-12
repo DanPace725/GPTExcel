@@ -2,6 +2,7 @@ import azure.functions as func
 import logging
 import os
 import msal
+import requests
 
 def get_token():
     """Get a token for Microsoft Graph API."""
@@ -23,6 +24,25 @@ def get_token():
         return result["access_token"]
     else:
         raise Exception(f"Error acquiring token: {result}")
+    
+def make_graph_api_request(token, endpoint, method='GET', data=None):
+    """Make a request to the Microsoft Graph API."""
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
+    if method == "GET":
+        response = requests.get(endpoint, headers=headers)
+    elif method == "POST":
+        response = requests.post(endpoint, headers=headers, json=data)
+    elif method == "PUT":     
+        response = requests.put(endpoint, headers=headers, json=data)
+    elif method == "PATCH":     
+        response = requests.patch(endpoint, headers=headers, json=data)
+    else:
+        raise ValueError("HTTP method not supported")
+
+    return response.json()
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
@@ -31,32 +51,25 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     try:
-        # Attempt to get the access token
+        # Obtain the access token
         token = get_token()
-        logging.info("Successfully obtained access token.")
-    except Exception as e:
-        logging.error(f"Error obtaining access token: {e}")
+
+        # Example usage of make_graph_api_request (modify as needed)
+        endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2"
+        graph_response = make_graph_api_request(token, endpoint)
+
+        # Return the Graph API response to the user
         return func.HttpResponse(
-            "Error obtaining access token.",
-            status_code=500
+            body=str(graph_response),
+            status_code=200,
+            headers={"Content-Type": "application/json"}
         )
 
-    # Existing logic to handle the request
-    name = req.params.get('name')
-    if not name:
-        try:
-            req_body = req.get_json()
-        except ValueError:
-            pass
-        else:
-            name = req_body.get('name')
-
-    if name:
-        return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
-    else:
+    except Exception as e:
+        logging.error(f"Error: {e}")
         return func.HttpResponse(
-            "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-            status_code=200
+            str(e),
+            status_code=500
         )
 
 # Add any additional functionality as needed
