@@ -58,7 +58,7 @@ def main():
     token = get_token(config)
     
 
-    """ values = [
+    values = [
         ["Hello World"],["How are you?"]
         ]
     
@@ -69,7 +69,7 @@ def main():
     if response.get('error', None):
         print("Failed to update excel sheet.")
     else:
-        print("Success")"""
+        print("Success")
 
 
 if __name__ == "__main__":

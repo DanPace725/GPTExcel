@@ -45,6 +45,13 @@ def make_graph_api_request(token, endpoint, method='GET', data=None):
 
     return response.json()
 
+def update_excel_sheet(token, file_endpoint, range_address, values):
+    """Update an Excel sheet with given values."""
+    endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1/range(address=\'{range_address}\')"
+    payload = {"values": values}
+    response = make_graph_api_request(token, endpoint, method='PATCH', data=payload)
+    return response
+
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 @app.route(route="gptExcel_http_trigger")
@@ -52,16 +59,19 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     try:
-        # Obtain the access token
         token = get_token()
+        # Define the values and range here, or extract them from the request
+        values = [["Hello World"], ["How are you?"]]
+        range_address = "A2:A3"
 
-        # Example usage of make_graph_api_request (modify as needed)
-        endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLN6Y2GOVW7725BZO354PWSELRRZ"
-        graph_response = make_graph_api_request(token, endpoint)
+        # You might want to dynamically determine the file_endpoint based on the request or configuration
+        file_endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL/workbook/worksheets/Sheet1"
 
-        # Return the Graph API response to the user
+        response = update_excel_sheet(token, file_endpoint, range_address, values)
+
+        # Return the response from updating the Excel sheet
         return func.HttpResponse(
-            body=json.dumps(graph_response),
+            body=json.dumps(response),
             status_code=200,
             headers={"Content-Type": "application/json"}
         )
@@ -69,8 +79,7 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"Error: {e}")
         return func.HttpResponse(
-            str(e),
-            status_code=500
-        )
-
+        str(e),
+        status_code=500
+    )
 # Add any additional functionality as needed
