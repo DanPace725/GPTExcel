@@ -65,8 +65,7 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         range_address = "A2:A3"
 
         # You might want to dynamically determine the file_endpoint based on the request or configuration
-        file_endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL/workbook/worksheets/Sheet1"
-
+        file_endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL"
         response = update_excel_sheet(token, file_endpoint, range_address, values)
 
         # Return the response from updating the Excel sheet
