@@ -1,0 +1,2 @@
+function app = https://gptexcelbackend.azurewebsites.net
+api base url = https://gptexcel.azure-api.net/gptExcelBackend

@@ -89,7 +89,7 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     except ValueError:
         return func.HttpResponse(
             "Invalid JSON in request body.",
-            status_code=400
+            status_code=400)
 
     except Exception as e:
         logging.error(f"Error: {e}")
