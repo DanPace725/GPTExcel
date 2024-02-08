@@ -59,10 +59,22 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     try:
+# Extract payload from the incoming request
+        req_body = req.get_json()
+
+        # Assuming the payload contains the range and values for the Excel update
+        range_address = req_body.get("range")  # e.g., "A2:A3"
+        values = req_body.get("values")  # e.g., [["Hello World"], ["How are you?"]]
+
+        if not range_address or not values:
+            return func.HttpResponse(
+                "Invalid request: range and values are required.",
+                status_code=400
+            )
+
         token = get_token()
         # Define the values and range here, or extract them from the request
-        values = [["Hello World"], ["How are you?"]]
-        range_address = "A2:A3"
+ 
 
         # You might want to dynamically determine the file_endpoint based on the request or configuration
         file_endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL"
@@ -74,6 +86,10 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
             status_code=200,
             headers={"Content-Type": "application/json"}
         )
+    except ValueError:
+        return func.HttpResponse(
+            "Invalid JSON in request body.",
+            status_code=400
 
     except Exception as e:
         logging.error(f"Error: {e}")
