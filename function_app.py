@@ -78,10 +78,10 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
 
         token = get_token()
         # Define the values and range here, or extract them from the request
- 
+        base_path = os.environ.get("GraphDriveBasePath")
 
         # You might want to dynamically determine the file_endpoint based on the request or configuration
-        file_endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL"
+        file_endpoint = f"{base_path}/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL"
         response = update_excel_sheet(token, file_endpoint, range_address, values)
 
         # Return the response from updating the Excel sheet
@@ -108,7 +108,8 @@ def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
     try:
         token = get_token()
         # Use an environment variable for the file endpoint
-        file_endpoint = os.environ.get("GraphFileEndpoint")
+        base_path = os.environ.get("GraphDriveBasePath")
+        file_endpoint = f"{base_path}/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL"
         req_body = req.get_json(silent=True)
 
         if not req_body or "range" not in req_body:
