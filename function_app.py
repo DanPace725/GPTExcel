@@ -97,4 +97,30 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         str(e),
         status_code=500
     )
+@app.route(route="getExcelData", methods=["GET"])
+def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('Python HTTP trigger function processed a GET request.')
+
+    try:
+        token = get_token()
+        # Define the endpoint for the Excel file
+        file_endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL"
+        range_address = "A1:B2"  # Specify the range you want to retrieve, or get it from the request parameters
+
+        endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1/range(address=\'{range_address}\')"
+        response = make_graph_api_request(token, endpoint, method='GET')
+
+        # Return the response containing the Excel data
+        return func.HttpResponse(
+            body=json.dumps(response),
+            status_code=200,
+            headers={"Content-Type": "application/json"}
+        )
+
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return func.HttpResponse(
+            str(e),
+            status_code=500
+        )
 # Add any additional functionality as needed
