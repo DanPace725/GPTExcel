@@ -8,7 +8,7 @@ import json
 def get_token():
     """Get a token for Microsoft Graph API."""
     client_id = os.environ["GraphClient"]
-    authority = "https://login.microsoftonline.com/e7ff886e-c3fe-451f-a8e2-b4e879043d56"
+    authority = os.environ["GraphAuthority"]
     client_secret = os.environ["GraphSecret"]
 
     app = msal.ConfidentialClientApplication(
@@ -53,6 +53,10 @@ def update_excel_sheet(token, file_endpoint, range_address, values):
     return response
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
+
+
+
+
 
 @app.route(route="gptExcel_http_trigger")
 def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
@@ -103,16 +107,29 @@ def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         token = get_token()
-        # Define the endpoint for the Excel file
-        file_endpoint = "https://graph.microsoft.com/v1.0/drives/b!ddqahrDq6Eu1NVZhhGP4GtgprDkU-NJPuvcgW0p_hVC2MRe0e6t6Q63vrJkVhhG2/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL"
-        range_address = "A1:B2"  # Specify the range you want to retrieve, or get it from the request parameters
+        # Use an environment variable for the file endpoint
+        file_endpoint = os.environ.get("GraphFileEndpoint")
+        req_body = req.get_json(silent=True)
+
+        if not req_body or "range" not in req_body:
+            return func.HttpResponse(
+                "Invalid request: 'range' is required in the request body.",
+                status_code=400
+            )
+
+        range_address = req_body["range"]
 
         endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1/range(address=\'{range_address}\')"
         response = make_graph_api_request(token, endpoint, method='GET')
 
-        # Return the response containing the Excel data
+        if response.status_code != 200:
+            return func.HttpResponse(
+                "Failed to retrieve data from Excel sheet.",
+                status_code=response.status_code
+            )
+
         return func.HttpResponse(
-            body=json.dumps(response),
+            body=json.dumps(response.json()),
             status_code=200,
             headers={"Content-Type": "application/json"}
         )
@@ -120,7 +137,32 @@ def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"Error: {e}")
         return func.HttpResponse(
-            str(e),
+            "An error occurred processing your request.",
             status_code=500
         )
-# Add any additional functionality as needed
+    
+
+@app.route(route="getDriveInfo", methods=["GET"])
+def get_drive_info(req: func.HttpRequest) -> func.HttpResponse:
+    """Azure Function to retrieve information about a OneDrive drive.
+
+    Args:
+        req (func.HttpRequest): The incoming HTTP request.
+
+    Returns:
+        func.HttpResponse: JSON response containing drive information.
+    """
+    logging.info('Processing a request to retrieve drive information.')
+
+    try:
+        drive_base_path = os.environ["GraphDriveBasePath"]
+        token = get_token()
+
+        # Construct the URL to get drive information. Assuming drive_base_path includes '/drives/{drive-id}'
+        drive_info_url = f"{drive_base_path}"
+        response = make_graph_api_request(token, drive_info_url, method='GET')
+
+        return func.HttpResponse(body=json.dumps(response), status_code=200, headers={"Content-Type": "application/json"})
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return func.HttpResponse(str(e), status_code=500)
