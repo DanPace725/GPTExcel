@@ -142,25 +142,25 @@ def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
         )
     
 
-@app.route(route="getDriveInfo", methods=["GET"])
-def get_drive_info(req: func.HttpRequest) -> func.HttpResponse:
-    """Azure Function to retrieve information about a OneDrive drive.
+@app.route(route="getDriveItems", methods=["GET"])
+def get_drive_items(req: func.HttpRequest) -> func.HttpResponse:
+    """Azure Function to retrieve the list of items in the root directory of a OneDrive drive.
 
     Args:
         req (func.HttpRequest): The incoming HTTP request.
 
     Returns:
-        func.HttpResponse: JSON response containing drive information.
+        func.HttpResponse: JSON response containing the list of items in the drive's root.
     """
-    logging.info('Processing a request to retrieve drive information.')
+    logging.info('Processing a request to retrieve items from the drive\'s root directory.')
 
     try:
         drive_base_path = os.environ["GraphDriveBasePath"]
         token = get_token()
 
-        # Construct the URL to get drive information. Assuming drive_base_path includes '/drives/{drive-id}'
-        drive_info_url = f"{drive_base_path}"
-        response = make_graph_api_request(token, drive_info_url, method='GET')
+        # Append '/root/children' to the drive_base_path to get items in the root directory
+        drive_items_url = f"{drive_base_path}/root/children"
+        response = make_graph_api_request(token, drive_items_url, method='GET')
 
         return func.HttpResponse(body=json.dumps(response), status_code=200, headers={"Content-Type": "application/json"})
     except Exception as e:
