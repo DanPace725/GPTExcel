@@ -168,13 +168,13 @@ def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse("Invalid JSON in request body.", status_code=400)
 
         file_id = req_body.get("fileId")
-        range_address = req_body.get("range")
+        # range_address = req_body.get("range")
 
-        if not file_id or not range_address:
+        if not file_id:
             return func.HttpResponse("Invalid request: 'fileId' and 'range' are required.", status_code=400)
 
         file_endpoint = f"{base_path}/items/{file_id}"
-        endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1/range(address='{range_address}')"
+        endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1"
         response = make_graph_api_request(token, endpoint, 'GET')  # Use POST as suggested
 
         return func.HttpResponse(body=json.dumps(response), status_code=200, headers={"Content-Type": "application/json"})
