@@ -143,6 +143,7 @@ def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
         )
     
 
+@app.route(route="getDriveItems", methods=["GET"])
 def get_drive_items(req: func.HttpRequest) -> func.HttpResponse:
     """Azure Function to retrieve the list of items in the root directory of a OneDrive drive and return only their names.
 
