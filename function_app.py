@@ -54,8 +54,34 @@ def update_excel_sheet(token, file_endpoint, range_address, values):
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
+@app.route(route="getDriveItems", methods=["GET"])
+def get_drive_items(req: func.HttpRequest) -> func.HttpResponse:
+    """Azure Function to retrieve the list of items in the root directory of a OneDrive drive and return only their names.
 
+    Args:
+        req (func.HttpRequest): The incoming HTTP request.
 
+    Returns:
+        func.HttpResponse: JSON response containing the list of item names in the drive's root.
+    """
+    logging.info('Processing a request to retrieve item names from the drive\'s root directory.')
+
+    try:
+        drive_base_path = os.environ["GraphDriveBasePath"]
+        token = get_token()
+
+        # Append '/root/children' to the drive_base_path to get items in the root directory
+        drive_items_url = f"{drive_base_path}/root/children"
+        response = make_graph_api_request(token, drive_items_url, method='GET')
+
+        # Extract item names from the response
+        item_names = [item['name'] for item in response['value']]
+
+        # Return only the item names in the response
+        return func.HttpResponse(body=json.dumps(item_names), status_code=200, headers={"Content-Type": "application/json"})
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return func.HttpResponse(str(e), status_code=500)
 
 
 @app.route(route="gptExcel_http_trigger")
@@ -101,73 +127,51 @@ def gptExcel_http_trigger(req: func.HttpRequest) -> func.HttpResponse:
         str(e),
         status_code=500
     )
-@app.route(route="getExcelData", methods=["GET"])
-def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function processed a GET request.')
+
+@app.route(route="listExcelFiles", methods=["GET"])
+def list_excel_files(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('Retrieving list of Excel files from the drive.')
 
     try:
         token = get_token()
-        # Use an environment variable for the file endpoint
-        base_path = os.environ.get("GraphDriveBasePath")
-        file_endpoint = f"{base_path}/items/017IM2XLK7SDZKFIY33BDL2GZNQLRHV2OL"
-        req_body = req.get_json(silent=True)
+        drive_base_path = os.environ["GraphDriveBasePath"]
+        drive_items_url = f"{drive_base_path}/root/search(q='.xlsx')"
+        response = make_graph_api_request(token, drive_items_url, 'GET')
 
-        if not req_body or "range" not in req_body:
-            return func.HttpResponse(
-                "Invalid request: 'range' is required in the request body.",
-                status_code=400
-            )
+        # Filter for Excel files based on mimeType
+        excel_files = [
+            {"name": item['name'], "id": item['id']} 
+            for item in response['value'] 
+            if item.get('file', {}).get('mimeType') == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ]
 
-        range_address = req_body["range"]
-
-        endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1/range(address=\'{range_address}\')"
-        response = make_graph_api_request(token, endpoint, method='GET')
-
-        if response.status_code != 200:
-            return func.HttpResponse(
-                "Failed to retrieve data from Excel sheet.",
-                status_code=response.status_code
-            )
-
-        return func.HttpResponse(
-            body=json.dumps(response.json()),
-            status_code=200,
-            headers={"Content-Type": "application/json"}
-        )
-
+        return func.HttpResponse(body=json.dumps(excel_files), status_code=200, headers={"Content-Type": "application/json"})
     except Exception as e:
         logging.error(f"Error: {e}")
-        return func.HttpResponse(
-            "An error occurred processing your request.",
-            status_code=500
-        )
-    
+        return func.HttpResponse(str(e), status_code=500)
 
-@app.route(route="getDriveItems", methods=["GET"])
-def get_drive_items(req: func.HttpRequest) -> func.HttpResponse:
-    """Azure Function to retrieve the list of items in the root directory of a OneDrive drive and return only their names.
 
-    Args:
-        req (func.HttpRequest): The incoming HTTP request.
 
-    Returns:
-        func.HttpResponse: JSON response containing the list of item names in the drive's root.
-    """
-    logging.info('Processing a request to retrieve item names from the drive\'s root directory.')
+@app.route(route="getExcelData", methods=["POST"])
+def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('Fetching data from an Excel file.')
 
     try:
-        drive_base_path = os.environ["GraphDriveBasePath"]
         token = get_token()
+        base_path = os.environ.get("GraphDriveBasePath")
+        req_params = req.get_json(silent=True)
 
-        # Append '/root/children' to the drive_base_path to get items in the root directory
-        drive_items_url = f"{drive_base_path}/root/children"
-        response = make_graph_api_request(token, drive_items_url, method='GET')
+        file_id = req_params.get("fileId")
+        range_address = req_params.get("range")
 
-        # Extract item names from the response
-        item_names = [item['name'] for item in response['value']]
+        if not file_id or not range_address:
+            return func.HttpResponse("Invalid request: 'fileId' and 'range' are required.", status_code=400)
 
-        # Return only the item names in the response
-        return func.HttpResponse(body=json.dumps(item_names), status_code=200, headers={"Content-Type": "application/json"})
+        file_endpoint = f"{base_path}/items/{file_id}"
+        endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1/range(address=\'{range_address}\')"
+        response = make_graph_api_request(token, endpoint, 'GET')
+
+        return func.HttpResponse(body=json.dumps(response), status_code=200, headers={"Content-Type": "application/json"})
     except Exception as e:
         logging.error(f"Error: {e}")
         return func.HttpResponse(str(e), status_code=500)
