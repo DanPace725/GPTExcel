@@ -152,7 +152,7 @@ def list_excel_files(req: func.HttpRequest) -> func.HttpResponse:
 
 
 
-@app.route(route="getExcelData", methods=["POST"])  # Consider using POST for sending data in the body
+@app.route(route="getExcelData", methods=["GET"])  # Consider using POST for sending data in the body
 def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Fetching data from an Excel file.')
 
@@ -175,7 +175,7 @@ def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
 
         file_endpoint = f"{base_path}/items/{file_id}"
         endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1/range(address=\'{range_address}\')"
-        response = make_graph_api_request(token, endpoint, 'POST')  # Use POST as suggested
+        response = make_graph_api_request(token, endpoint, 'GET')  # Use POST as suggested
 
         return func.HttpResponse(body=json.dumps(response), status_code=200, headers={"Content-Type": "application/json"})
     except Exception as e:
