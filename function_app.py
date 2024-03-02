@@ -152,26 +152,33 @@ def list_excel_files(req: func.HttpRequest) -> func.HttpResponse:
 
 
 
-@app.route(route="getExcelData", methods=["POST"])
+@app.route(route="getExcelData", methods=["POST"])  # Consider using POST for sending data in the body
 def get_excel_data(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Fetching data from an Excel file.')
 
     try:
         token = get_token()
         base_path = os.environ.get("GraphDriveBasePath")
-        req_params = req.get_json(silent=True)
 
-        file_id = req_params.get("fileId")
-        range_address = req_params.get("range")
+        try:
+            # Attempt to parse the JSON body directly without the 'silent' keyword
+            req_body = req.get_json()
+        except ValueError:
+            # Handle the case where JSON parsing fails
+            return func.HttpResponse("Invalid JSON in request body.", status_code=400)
+
+        file_id = req_body.get("fileId")
+        range_address = req_body.get("range")
 
         if not file_id or not range_address:
             return func.HttpResponse("Invalid request: 'fileId' and 'range' are required.", status_code=400)
 
         file_endpoint = f"{base_path}/items/{file_id}"
-        endpoint = f"{file_endpoint}/workbook/worksheets/Sheet1/range(address=\'{range_address}\')"
-        response = make_graph_api_request(token, endpoint, 'GET')
+        endpoint = f"{file_endpoint}/workbook/worksheets/{range_address}"
+        response = make_graph_api_request(token, endpoint, 'POST')  # Use POST as suggested
 
         return func.HttpResponse(body=json.dumps(response), status_code=200, headers={"Content-Type": "application/json"})
     except Exception as e:
         logging.error(f"Error: {e}")
         return func.HttpResponse(str(e), status_code=500)
+
